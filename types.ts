@@ -10,6 +10,7 @@ export interface Vector {
 export interface SimulationParams {
   // Environment
   g: number; // m/s^2
+  playbackSpeed: number; // 0.25, 0.5, 1, 2
   
   // Model 1 & 2: Single Body / Belt
   theta: number; // degrees
@@ -79,4 +80,5 @@ export interface DataPoint {
   v_rel?: number; // 相对速度
   Ek: number; 
   Q: number; 
+  event?: string; // 记录状态变更
 }

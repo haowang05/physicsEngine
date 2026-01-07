@@ -1,3 +1,4 @@
+
 import { SimulationParams } from "./types";
 
 export const DT = 0.016; // Time step (approx 60fps)
@@ -5,6 +6,7 @@ export const DT = 0.016; // Time step (approx 60fps)
 export const DEFAULT_PARAMS: Record<string, SimulationParams> = {
   single: {
     g: 9.8,
+    playbackSpeed: 1,
     theta: 30,
     mu: 0.2,
     mass: 2,
@@ -24,6 +26,7 @@ export const DEFAULT_PARAMS: Record<string, SimulationParams> = {
   },
   belt: {
     g: 9.8,
+    playbackSpeed: 1,
     theta: 0,
     mu: 0.5,
     mass: 1,
@@ -43,6 +46,7 @@ export const DEFAULT_PARAMS: Record<string, SimulationParams> = {
   },
   plank: {
     g: 9.8,
+    playbackSpeed: 1,
     theta: 0, // Usually horizontal for block-plank
     mu: 0,
     mass: 1, // Block mass (m)

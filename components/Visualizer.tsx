@@ -6,6 +6,7 @@ interface VisualizerProps {
   type: ModelType;
   params: SimulationParams;
   state: SimulationState;
+  height?: number; // 接收动态高度
 }
 
 const SCALE = 60; // 像素/米
@@ -26,12 +27,11 @@ const Arrow = ({ x, y, angle, length, color, label }: any) => {
   );
 };
 
-const Visualizer: React.FC<VisualizerProps> = ({ type, params, state }) => {
+const Visualizer: React.FC<VisualizerProps> = ({ type, params, state, height: containerHeight = 350 }) => {
   const [lastStatus, setLastStatus] = useState(state.status);
   const [showStatus, setShowStatus] = useState(false);
   const timerRef = useRef<number | null>(null);
 
-  // 监听状态变化，弹出气泡
   useEffect(() => {
     if (state.status !== lastStatus) {
       setLastStatus(state.status);
@@ -42,10 +42,10 @@ const Visualizer: React.FC<VisualizerProps> = ({ type, params, state }) => {
   }, [state.status, lastStatus]);
 
   const width = 800;
-  const height = 300;
-  const groundY = 220;
+  // 内部坐标系的 groundY 根据容器高度动态调整，确保滑块在底部上方
+  const svgHeight = 300; 
+  const groundY = 220; 
   
-  // 视口跟随逻辑：让物体始终处于屏幕中间区域
   const viewOffset = state.x1 * SCALE > 400 ? 400 - state.x1 * SCALE : 0;
 
   const slopeAngle = (type === 'single' || type === 'belt') ? params.theta : 0;
@@ -58,18 +58,17 @@ const Visualizer: React.FC<VisualizerProps> = ({ type, params, state }) => {
   const plankX = state.x2 * SCALE;
 
   return (
-    <div className="visualizer-box" style={{ height: '350px', background: '#020617', position: 'relative', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden', marginBottom: '1rem' }}>
+    <div className="visualizer-box" style={{ height: '100%', background: '#020617', position: 'relative', border: 'none', borderRadius: '12px', overflow: 'hidden' }}>
       <div className="status-tag">
         {state.status.toUpperCase()}
       </div>
 
-      <div style={{ position: 'absolute', top: '1rem', right: '1rem', textAlign: 'right', color: 'var(--text-dim)', fontSize: '0.8rem', zIndex: 5 }}>
+      <div style={{ position: 'absolute', top: '1rem', right: '1rem', textAlign: 'right', color: 'var(--text-dim)', fontSize: '0.8rem', zIndex: 5, background: 'rgba(2, 6, 23, 0.6)', padding: '4px', borderRadius: '4px' }}>
         <div>TIME: <span style={{ color: 'white', fontWeight: 'bold' }}>{state.t.toFixed(2)}s</span></div>
         <div>POS: <span style={{ color: '#60a5fa' }}>{state.x1.toFixed(2)}m</span></div>
         <div>VEL: <span style={{ color: '#60a5fa' }}>{state.v1.toFixed(2)}m/s</span></div>
       </div>
 
-      {/* 摩擦力状态弹出气泡 */}
       {showStatus && (
         <div style={{
           position: 'absolute',
@@ -107,7 +106,11 @@ const Visualizer: React.FC<VisualizerProps> = ({ type, params, state }) => {
         }
       `}</style>
 
-      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%' }}>
+      <svg 
+        viewBox={`0 0 ${width} ${svgHeight}`} 
+        style={{ width: '100%', height: '100%' }}
+        preserveAspectRatio="xMidYMid meet"
+      >
         <defs>
           <marker id="arrowhead-10b981" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#10b981" /></marker>
           <marker id="arrowhead-ef4444" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ef4444" /></marker>
@@ -119,23 +122,18 @@ const Visualizer: React.FC<VisualizerProps> = ({ type, params, state }) => {
           </linearGradient>
         </defs>
 
-        {/* 坐标轴参考线 */}
         <g transform={`translate(${100 + viewOffset}, ${groundY})`}>
           <g transform={`rotate(${-slopeAngle})`}>
-            {/* 轨道/地面 */}
             {type === 'belt' ? (
               <rect x="-1000" y="-2" width="5000" height="10" fill="#334155" className="belt-pattern" stroke="#1e293b" />
             ) : (
               <line x1="-1000" y1="0" x2="5000" y2="0" stroke="#475569" strokeWidth="2" />
             )}
 
-            {/* 木板 (Plank) */}
             {type === 'plank' && (
               <g transform={`translate(${plankX - plankW / 2}, ${-plankH})`}>
                 <rect width={plankW} height={plankH} fill="#78350f" stroke="#451a03" strokeWidth="2" rx="2" />
                 <text x={plankW/2} y={plankH/2} fill="#fcd34d" fontSize="10" textAnchor="middle" dominantBaseline="middle">M</text>
-                
-                {/* 木板受力图 */}
                 <g transform={`translate(${plankW / 2}, ${plankH / 2})`}>
                   <Arrow angle={90} length={state.forces.gravity2 / 5} color="#10b981" label="Mg" />
                   <Arrow angle={-90} length={state.forces.normal2 / 5} color="#6366f1" label="N2" />
@@ -145,12 +143,9 @@ const Visualizer: React.FC<VisualizerProps> = ({ type, params, state }) => {
               </g>
             )}
 
-            {/* 滑块 (Block) */}
             <g transform={`translate(${blockX - blockW / 2}, ${-blockH - (type === 'plank' ? plankH : 0)})`}>
               <rect width={blockW} height={blockH} fill="url(#blockGrad)" stroke="#1e3a8a" strokeWidth="2" rx="4" />
               <text x={blockW/2} y={blockH/2} fill="white" fontSize="14" fontWeight="bold" textAnchor="middle" dominantBaseline="middle">m</text>
-              
-              {/* 滑块受力图 */}
               <g transform={`translate(${blockW / 2}, ${blockH / 2})`}>
                 <Arrow angle={90 + slopeAngle} length={state.forces.gravity1 / 5} color="#10b981" label="mg" />
                 <Arrow angle={-90} length={state.forces.normal1 / 5} color="#6366f1" label="N1" />

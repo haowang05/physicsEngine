@@ -24,7 +24,7 @@ const Controls: React.FC<ControlsProps> = ({ modelType, params, setParams, onRes
     <div className="sidebar">
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>实验参数控制</h2>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
           <button
             onClick={togglePlay}
             className={`btn ${isPlaying ? 'btn-danger' : 'btn-primary'}`}
@@ -35,6 +35,30 @@ const Controls: React.FC<ControlsProps> = ({ modelType, params, setParams, onRes
           <button onClick={onReset} className="btn btn-reset" style={{ flex: 1 }}>
             重置
           </button>
+        </div>
+
+        <div className="input-group">
+          <div className="label">演示倍速</div>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {[0.25, 0.5, 1, 2].map(speed => (
+              <button
+                key={speed}
+                onClick={() => setParams({ ...params, playbackSpeed: speed })}
+                style={{
+                  flex: 1,
+                  padding: '4px',
+                  fontSize: '0.7rem',
+                  borderRadius: '4px',
+                  border: '1px solid var(--border)',
+                  background: params.playbackSpeed === speed ? 'var(--accent)' : 'var(--bg-main)',
+                  color: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                {speed}x
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
