@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { ModelType, SimulationParams } from '../types';
+import { calculateCriticalForce } from '../services/physicsEngine';
 
 interface ControlsProps {
   modelType: ModelType;
@@ -10,109 +12,90 @@ interface ControlsProps {
   togglePlay: () => void;
 }
 
-const InputGroup = ({ label, children }: { label: string, children?: React.ReactNode }) => (
-  <div className="mb-4">
-    <label className="block text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">{label}</label>
-    <div className="space-y-2">
-      {children}
-    </div>
-  </div>
-);
-
-const NumberInput = ({ label, value, onChange, min, max, step = 0.1 }: any) => (
-  <div className="flex justify-between items-center">
-    <span className="text-slate-300 text-sm w-32">{label}</span>
-    <input
-      type="number"
-      value={value}
-      onChange={(e) => onChange(parseFloat(e.target.value))}
-      className="w-20 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-blue-500"
-      step={step}
-      min={min}
-      max={max}
-    />
-  </div>
-);
-
 const Controls: React.FC<ControlsProps> = ({ modelType, params, setParams, onReset, isPlaying, togglePlay }) => {
-  
   const update = (key: keyof SimulationParams, val: number) => {
     setParams({ ...params, [key]: val });
-    onReset(); // Reset sim when params change
+    onReset();
   };
 
+  const critical = modelType === 'plank' ? calculateCriticalForce(params) : null;
+
   return (
-    <div className="w-80 bg-slate-900 border-r border-slate-700 p-4 overflow-y-auto h-full flex flex-col">
-      <div className="mb-6">
-        <h2 className="text-white text-lg font-bold mb-4">参数配置</h2>
-        <div className="flex gap-2 mb-4">
+    <div className="sidebar">
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>实验参数控制</h2>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={togglePlay}
-            className={`flex-1 py-2 px-4 rounded font-bold ${isPlaying ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white transition`}
+            className={`btn ${isPlaying ? 'btn-danger' : 'btn-primary'}`}
+            style={{ flex: 1 }}
           >
             {isPlaying ? '暂停' : '开始'}
           </button>
-          <button
-            onClick={onReset}
-            className="flex-1 py-2 px-4 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold transition"
-          >
+          <button onClick={onReset} className="btn btn-reset" style={{ flex: 1 }}>
             重置
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2">
-        <InputGroup label="环境参数">
-          <NumberInput label="重力 g (m/s²)" value={params.g} onChange={(v: number) => update('g', v)} />
-        </InputGroup>
+      {modelType === 'plank' && critical && (
+        <div className="alert-info" style={{ marginBottom: '1.5rem' }}>
+          <div className="label" style={{ color: '#60a5fa', marginBottom: '4px' }}>临界滑动阈值</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>滑块受力 F1c:</span> <strong>{critical.F1c.toFixed(1)}N</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>木板受力 F2c:</span> <strong>{critical.F2c.toFixed(1)}N</strong>
+          </div>
+        </div>
+      )}
 
-        {modelType !== 'plank' && (
-          <InputGroup label="滑块属性">
-            <NumberInput label="质量 m (kg)" value={params.mass} onChange={(v: number) => update('mass', v)} min={0.1} />
-            <NumberInput label="初速度 v0 (m/s)" value={params.v0} onChange={(v: number) => update('v0', v)} />
-            <NumberInput label="外力 F (N)" value={params.F_mag} onChange={(v: number) => update('F_mag', v)} />
-             {modelType === 'single' && (
-               <NumberInput label="外力角度 (°)" value={params.F_angle} onChange={(v: number) => update('F_angle', v)} />
-             )}
-          </InputGroup>
-        )}
-
-        {modelType !== 'plank' && (
-          <InputGroup label="接触面属性">
-            <NumberInput label="倾角 θ (°)" value={params.theta} onChange={(v: number) => update('theta', v)} min={0} max={90} />
-            <NumberInput label="摩擦系数 μ" value={params.mu} onChange={(v: number) => update('mu', v)} min={0} step={0.05} />
-          </InputGroup>
-        )}
-
-        {modelType === 'belt' && (
-          <InputGroup label="传送带参数">
-            <NumberInput label="传送带速度 (m/s)" value={params.v_belt} onChange={(v: number) => update('v_belt', v)} />
-          </InputGroup>
-        )}
-
-        {/* Stacked Block Specific Controls */}
-        {modelType === 'plank' && (
-          <>
-            <InputGroup label="上滑块 (Block m)">
-              <NumberInput label="质量 m (kg)" value={params.mass} onChange={(v: number) => update('mass', v)} min={0.1} />
-              <NumberInput label="初速度 v0 (m/s)" value={params.v0} onChange={(v: number) => update('v0', v)} />
-              <NumberInput label="拉力 F1 (N)" value={params.F_block} onChange={(v: number) => update('F_block', v)} />
-            </InputGroup>
-
-            <InputGroup label="下木板 (Plank M)">
-              <NumberInput label="质量 M (kg)" value={params.M_plank} onChange={(v: number) => update('M_plank', v)} min={0.1} />
-              <NumberInput label="木板长度 L (m)" value={params.L_plank} onChange={(v: number) => update('L_plank', v)} min={0.5} />
-              <NumberInput label="初速度 v0 (m/s)" value={params.v0_plank} onChange={(v: number) => update('v0_plank', v)} />
-              <NumberInput label="拉力 F2 (N)" value={params.F_plank} onChange={(v: number) => update('F_plank', v)} />
-            </InputGroup>
-
-            <InputGroup label="摩擦系数">
-               <NumberInput label="μ1 (上下接触面)" value={params.mu_block} onChange={(v: number) => update('mu_block', v)} step={0.05} />
-               <NumberInput label="μ2 (下表面/地面)" value={params.mu_ground} onChange={(v: number) => update('mu_ground', v)} step={0.05} />
-            </InputGroup>
-          </>
-        )}
+      <div className="input-group">
+        <div className="label">环境常量</div>
+        <div className="input-row">
+          <span style={{ fontSize: '0.85rem' }}>重力 g (m/s²)</span>
+          <input className="input-field" type="number" step="0.1" value={params.g} onChange={e => update('g', parseFloat(e.target.value))} />
+        </div>
       </div>
+
+      {modelType === 'plank' ? (
+        <>
+          <div className="input-group">
+            <div className="label">滑块 m (Block)</div>
+            <div className="input-row"><span>质量 m (kg)</span><input className="input-field" type="number" value={params.mass} onChange={e => update('mass', parseFloat(e.target.value))} /></div>
+            <div className="input-row"><span>初速 v0 (m/s)</span><input className="input-field" type="number" value={params.v0} onChange={e => update('v0', parseFloat(e.target.value))} /></div>
+            <div className="input-row"><span>拉力 F1 (N)</span><input className="input-field" type="number" value={params.F_block} onChange={e => update('F_block', parseFloat(e.target.value))} /></div>
+          </div>
+          <div className="input-group">
+            <div className="label">木板 M (Plank)</div>
+            <div className="input-row"><span>质量 M (kg)</span><input className="input-field" type="number" value={params.M_plank} onChange={e => update('M_plank', parseFloat(e.target.value))} /></div>
+            <div className="input-row"><span>长度 L (m)</span><input className="input-field" type="number" value={params.L_plank} onChange={e => update('L_plank', parseFloat(e.target.value))} /></div>
+            <div className="input-row"><span>拉力 F2 (N)</span><input className="input-field" type="number" value={params.F_plank} onChange={e => update('F_plank', parseFloat(e.target.value))} /></div>
+          </div>
+          <div className="input-group">
+            <div className="label">摩阻系数</div>
+            <div className="input-row"><span>μ1 (m-M)</span><input className="input-field" type="number" step="0.01" value={params.mu_block} onChange={e => update('mu_block', parseFloat(e.target.value))} /></div>
+            <div className="input-row"><span>μ2 (M-地)</span><input className="input-field" type="number" step="0.01" value={params.mu_ground} onChange={e => update('mu_ground', parseFloat(e.target.value))} /></div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="input-group">
+            <div className="label">滑块属性</div>
+            <div className="input-row"><span>质量 m (kg)</span><input className="input-field" type="number" value={params.mass} onChange={e => update('mass', parseFloat(e.target.value))} /></div>
+            <div className="input-row"><span>倾角 θ (°)</span><input className="input-field" type="number" value={params.theta} onChange={e => update('theta', parseFloat(e.target.value))} /></div>
+            <div className="input-row"><span>初速 v0 (m/s)</span><input className="input-field" type="number" value={params.v0} onChange={e => update('v0', parseFloat(e.target.value))} /></div>
+            <div className="input-row"><span>外力 F (N)</span><input className="input-field" type="number" value={params.F_mag} onChange={e => update('F_mag', parseFloat(e.target.value))} /></div>
+          </div>
+          <div className="input-group">
+            <div className="label">接触特性</div>
+            <div className="input-row"><span>摩擦系数 μ</span><input className="input-field" type="number" step="0.01" value={params.mu} onChange={e => update('mu', parseFloat(e.target.value))} /></div>
+            {modelType === 'belt' && (
+              <div className="input-row"><span>带速 v_b (m/s)</span><input className="input-field" type="number" value={params.v_belt} onChange={e => update('v_belt', parseFloat(e.target.value))} /></div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

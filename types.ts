@@ -1,3 +1,4 @@
+
 export type ModelType = 'single' | 'belt' | 'plank';
 
 export interface Vector {
@@ -41,16 +42,18 @@ export interface SimulationState {
   x1: number;
   v1: number;
   a1: number;
+  s1: number; // 累积路程
   
   // Object 2 (Plank - only for model 3)
   x2: number;
   v2: number;
   a2: number;
+  s2: number; // 累积路程
   
   // Forces for visualization (Magnitudes)
   forces: {
     friction1: number;
-    friction2: number; // Ground friction for plank
+    friction2: number; 
     normal1: number;
     normal2: number;
     gravity1: number;
@@ -60,17 +63,20 @@ export interface SimulationState {
   };
 
   // Status flags
-  status: string; // "Accelerating", "Co-velocity", "Detached"
+  status: string;
 }
 
 export interface DataPoint {
   time: number;
   x1: number;
   x2?: number;
+  s1: number; // 路程
+  s2?: number; // 路程
   v1: number;
   v2?: number;
   a1: number;
   a2?: number;
-  Ek: number; // Kinetic Energy
-  Q: number; // Heat generated (cumulative)
+  v_rel?: number; // 相对速度
+  Ek: number; 
+  Q: number; 
 }
